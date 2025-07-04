@@ -11,6 +11,8 @@
       font-family: 'Segoe UI', sans-serif;
       color: #222;
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     .navbar {
@@ -18,43 +20,26 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
-    .navbar .nav-link {
-      color: #222 !important;
-      font-weight: 500;
-    }
-
     .navbar-brand {
       font-weight: bold;
       color: #222 !important;
     }
 
-    .page {
-      display: none;
-    }
-
-    .active-page {
-      display: block;
-      animation: fadeIn 0.4s ease-in-out;
+    .main-content {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 15px;
     }
 
     .card {
       background-color: rgba(255, 255, 255, 0.95);
       border-radius: 10px;
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.06);
-    }
-
-    footer {
-      text-align: center;
-      padding: 16px;
-      background-color: #dbe9ee;
-      color: #333;
-      font-size: 0.9rem;
-      margin-top: 50px;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      max-width: 500px;
+      width: 100%;
+      padding: 30px;
     }
 
     .btn-dark {
@@ -66,84 +51,84 @@
       background-color: #111;
       border-color: #111;
     }
+
+    footer {
+      text-align: center;
+      padding: 16px;
+      background-color: #dbe9ee;
+      color: #333;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg">
+  <nav class="navbar navbar-light">
     <div class="container">
       <a class="navbar-brand" href="#">Location Viewer</a>
-      <div class="collapse navbar-collapse show">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('home')">Home</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('about')">About</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('contact')">Contact</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('signin')">Sign In</a></li>
-        </ul>
-      </div>
     </div>
   </nav>
 
-  <!-- Pages -->
-  <div class="container py-5">
-
-    <!-- Home Page -->
-    <div id="home" class="page active-page">
-      <div class="card p-4">
-        <h2 class="text-center mb-4">Find Your Location</h2>
-        <div class="text-center mb-3">
-          <button class="btn btn-dark" onclick="detectLocation()">Get My Location</button>
-        </div>
-        <div id="result" class="text-center fs-5"></div>
-      </div>
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="card text-center">
+      <h2 class="mb-4">Find Your Location</h2>
+      <button class="btn btn-dark mb-4" onclick="detectLocation()">Get My Location</button>
+      <div id="result" class="fs-5"></div>
     </div>
-
-    <!-- About Page -->
-    <div id="about" class="page">
-      <div class="card p-4">
-        <h2>About</h2>
-        <p>This tool helps you view your current city and country using your device's GPS or IP address. Designed for a smooth and user-friendly experience.</p>
-      </div>
-    </div>
-
-    <!-- Contact Page -->
-    <div id="contact" class="page">
-      <div class="card p-4">
-        <h2>Contact</h2>
-        <p>We're happy to connect with you:</p>
-        <ul>
-          <li>Email: support@locationviewer.app</li>
-          <li>Phone: +91 98765 43210</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Sign In Page -->
-    <div id="signin" class="page">
-      <div class="card p-4">
-        <h2>Sign In</h2>
-        <form>
-          <div class="mb-3">
-            <label class="form-label">Email address</label>
-            <input type="email" class="form-control" placeholder="Enter email">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" class="form-control" placeholder="Password">
-          </div>
-          <button type="submit" class="btn btn-dark">Sign In</button>
-        </form>
-      </div>
-    </div>
-
   </div>
 
   <!-- Footer -->
   <footer>
-    © 2025 Location Viewer — Designed for clarity and calm.
+    © 2025 Location Viewer — Simple, calm, and accurate.
   </footer>
 
   <!-- JavaScript -->
   <script>
-    function showPage(pageId) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('
+    function detectLocation() {
+      const result = document.getElementById("result");
+      result.innerHTML = "Detecting your location...";
+
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(async position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+
+          try {
+            const response = await fetch(url);
+            const data = await response.json();
+            const city = data.address.city || data.address.town || data.address.village || "Unknown city";
+            const country = data.address.country || "Unknown country";
+            result.innerHTML = `<strong>City:</strong> ${city}<br><strong>Country:</strong> ${country}`;
+          } catch (err) {
+            result.innerHTML = `<span class="text-danger">Reverse geocoding failed. Using IP instead...</span>`;
+            getIPLocation();
+          }
+        }, () => {
+          result.innerHTML = `<span class="text-warning">Permission denied. Using IP instead...</span>`;
+          getIPLocation();
+        });
+      } else {
+        result.innerHTML = `<span class="text-warning">Geolocation not supported. Using IP instead...</span>`;
+        getIPLocation();
+      }
+    }
+
+    async function getIPLocation() {
+      const result = document.getElementById("result");
+      try {
+        const response = await fetch("https://ipapi.co/json/");
+        const data = await response.json();
+        result.innerHTML = `
+          <strong>IP:</strong> ${data.ip}<br>
+          <strong>City:</strong> ${data.city}<br>
+          <strong>Country:</strong> ${data.country_name}
+        `;
+      } catch (err) {
+        result.innerHTML = `<span class="text-danger">Failed to get location data.</span>`;
+      }
+    }
+  </script>
+</body>
+</html>
